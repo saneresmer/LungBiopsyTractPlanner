@@ -1,9 +1,11 @@
 """Segmentation related logic extracted from the original module."""
 
+
 import numpy as np
 import vtk
 import slicer
 from scipy.spatial import cKDTree
+
 from LungBiopsyTractPlanner import LungBiopsyTractPlannerLogic
 from utils.helpers import (
     get_segment_mask_as_array,
@@ -14,6 +16,7 @@ from utils.helpers import (
     read_image_data,
 )
 from config.segmentator_task_settings import task_segment_map, task_name_map, roi_subset
+
 
 class SegmentationLogic(LungBiopsyTractPlannerLogic):
     """Implements segmentation routines using snake_case method names."""

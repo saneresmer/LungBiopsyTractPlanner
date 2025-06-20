@@ -1,4 +1,3 @@
-
 """Logic related to biopsy tract analysis."""
 
 import math
@@ -13,9 +12,6 @@ from LungBiopsyTractPlanner import (
 )
 from utils.helpers import iter_valid_lobes
 
-from LungBiopsyTractPlanner import LungBiopsyTractPlannerLogic
-
-
 
 class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
     """Expose tract analysis methods with snake_case naming."""
@@ -23,8 +19,67 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
     # ------------------------------------------------------------------
     # Wrappers around existing parent class methods
     # ------------------------------------------------------------------
-    def projects_on_scapulae_posterior(self, *args, **kwargs):
-        return super().projects_on_scapulae_posterior(*args, **kwargs)
+
+    def projects_on_scapulae_posterior(
+        self,
+        segmentation_node,
+        volume_node,
+        *,
+        target_name: str = "TargetRegion",
+        scap_right_name: str = "scapula_right",
+        scap_left_name: str = "scapula_left",
+        restrict_to_scap_z: bool = True,
+    ) -> bool:
+        """Return True if the posterior projection of *target_name* intersects either scapula."""
+
+        seg = segmentation_node.GetSegmentation()
+        bin_rep = slicer.vtkSegmentationConverter.GetBinaryLabelmapRepresentationName()
+        seg.SetConversionParameter("ReferenceImageGeometry", volume_node.GetID())
+        if not seg.ContainsRepresentation(bin_rep):
+            segmentation_node.CreateBinaryLabelmapRepresentation()
+
+        tid = seg.GetSegmentIdBySegmentName(target_name)
+        if not tid:
+            raise ValueError(f"Target segment '{target_name}' not found.")
+
+        sid_r = seg.GetSegmentIdBySegmentName(scap_right_name)
+        sid_l = seg.GetSegmentIdBySegmentName(scap_left_name)
+
+        scap_masks = []
+        if sid_r:
+            mask_r = slicer.util.arrayFromSegmentBinaryLabelmap(
+                segmentation_node, sid_r, volume_node
+            ).astype(bool)
+            if np.any(mask_r):
+                scap_masks.append(mask_r)
+
+        if sid_l:
+            mask_l = slicer.util.arrayFromSegmentBinaryLabelmap(
+                segmentation_node, sid_l, volume_node
+            ).astype(bool)
+            if np.any(mask_l):
+                scap_masks.append(mask_l)
+
+        if not scap_masks:
+            return False
+
+        scap_mask = np.logical_or.reduce(scap_masks)
+
+        tar_mask = slicer.util.arrayFromSegmentBinaryLabelmap(
+            segmentation_node, tid, volume_node
+        ).astype(bool)
+
+        if restrict_to_scap_z:
+            z_idx = np.where(scap_mask)[0]
+            zmin, zmax = int(z_idx.min()), int(z_idx.max())
+            tar_mask = tar_mask[zmin : zmax + 1]
+            scap_mask = scap_mask[zmin : zmax + 1]
+
+        tar_proj = np.any(tar_mask, axis=1)
+        scap_proj = np.any(scap_mask, axis=1)
+
+        return bool(np.any(tar_proj & scap_proj))
+
 
     def analyze_and_visualize_tracts(
         self, segmentation_node, combined_segmentation_node, risk_segments
@@ -197,12 +252,46 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
         for rank, tract in enumerate(sorted(tracts, key=lambda x: x[key]), start=1):
             tract[rank_key] = rank
 
+    # ------------------------------------------------------------------
+    # Risk and depth helper utilities
+    # ------------------------------------------------------------------
+    @staticmethod
+    def compute_risk_tract(event, model, tract_features, base_eta, risk_table):
+        """Return risk probability using logistic regression coefficients."""
+        table = risk_table[event][model]
+        eta = base_eta
 
+        for name, value in tract_features.items():
+            factor = table["factors"].get(name)
+            if factor:
+                eta += factor["beta"] * value
+        return 1.0 / (1.0 + math.exp(-eta))
 
-    def projects_on_scapulae_posterior(self, *args, **kwargs):
-        return super().projects_on_scapulae_posterior(*args, **kwargs)
+    @staticmethod
+    def depth_or_continuous(mm):
+        """Continuous odds ratio function for pneumothorax."""
+        anchors = [(0, 0.0), (20, math.log(2.16)), (30, math.log(2.38)), (50, math.log(8.47))]
+        for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+            if x0 <= mm <= x1:
+                t = (mm - x0) / (x1 - x0)
+                return math.exp(y0 + t * (y1 - y0))
 
-    def analyze_and_visualize_tracts(self, *args, **kwargs):
-        return super().analyzeAndVisualizeTracts(*args, **kwargs)
+        slope = (anchors[-1][1] - anchors[-2][1]) / (anchors[-1][0] - anchors[-2][0])
+        log_or = anchors[-1][1] + slope * (mm - anchors[-1][0])
+        return math.exp(log_or)
+
+    @staticmethod
+    def depth_or_continuous_hmr(mm):
+        """Continuous odds ratio for hemorrhage models."""
+        anchors = [(0, 0.0), (30, math.log(4.558)), (50, math.log(25.641))]
+        for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+            if x0 <= mm <= x1:
+                t = (mm - x0) / (x1 - x0)
+                return math.exp(y0 + t * (y1 - y0))
+
+        slope = (anchors[-1][1] - anchors[-2][1]) / (anchors[-1][0] - anchors[-2][0])
+        log_or = anchors[-1][1] + slope * (mm - anchors[-1][0])
+        return math.exp(log_or)
+
 
 
