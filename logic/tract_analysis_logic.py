@@ -1,3 +1,4 @@
+
 """Logic related to biopsy tract analysis."""
 
 import math
@@ -11,6 +12,9 @@ from LungBiopsyTractPlanner import (
     _getVesselImplicit,
 )
 from utils.helpers import iter_valid_lobes
+
+from LungBiopsyTractPlanner import LungBiopsyTractPlannerLogic
+
 
 
 class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
@@ -193,5 +197,12 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
         for rank, tract in enumerate(sorted(tracts, key=lambda x: x[key]), start=1):
             tract[rank_key] = rank
 
+
+
+    def projects_on_scapulae_posterior(self, *args, **kwargs):
+        return super().projects_on_scapulae_posterior(*args, **kwargs)
+
+    def analyze_and_visualize_tracts(self, *args, **kwargs):
+        return super().analyzeAndVisualizeTracts(*args, **kwargs)
 
 
