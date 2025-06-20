@@ -1,4 +1,4 @@
-"""Logic related to biopsy tract analysis."""
+"""Helper class providing biopsy tract analysis utilities."""
 
 import math
 import numpy as np
@@ -11,6 +11,9 @@ from LungBiopsyTractPlanner import (
     _getVesselImplicit,
 )
 from utils.helpers import iter_valid_lobes
+
+
+__all__ = ["TractAnalysisLogic"]
 
 
 class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
