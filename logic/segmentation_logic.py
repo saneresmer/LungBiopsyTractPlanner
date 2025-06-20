@@ -1,4 +1,5 @@
 """Segmentation related logic extracted from the original module."""
+
 import numpy as np
 import vtk
 import slicer
@@ -13,7 +14,6 @@ from utils.helpers import (
     read_image_data,
 )
 from config.segmentator_task_settings import task_segment_map, task_name_map, roi_subset
-
 
 class SegmentationLogic(LungBiopsyTractPlannerLogic):
     """Implements segmentation routines using snake_case method names."""
@@ -100,7 +100,6 @@ class SegmentationLogic(LungBiopsyTractPlannerLogic):
             segment.SetColor(0.0, 0.0, 139 / 255.0)
 
         return segmentationNode
-
 
     def add_target_region_from_largest_nodule(self, *args, **kwargs):
         return super().addTargetRegionFromLargestNodule(*args, **kwargs)
