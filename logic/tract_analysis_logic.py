@@ -19,6 +19,7 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
     # ------------------------------------------------------------------
     # Wrappers around existing parent class methods
     # ------------------------------------------------------------------
+
     def projects_on_scapulae_posterior(
         self,
         segmentation_node,
@@ -78,6 +79,7 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
         scap_proj = np.any(scap_mask, axis=1)
 
         return bool(np.any(tar_proj & scap_proj))
+
 
     def analyze_and_visualize_tracts(
         self, segmentation_node, combined_segmentation_node, risk_segments
