@@ -3,6 +3,51 @@
 # Maps TotalSegmentator task IDs to segment names
 # Copied from the original LungBiopsyTractPlanner module
 
+task_settings_map = {
+    "total": {
+        "needs_license": False,
+        "use_roi_subset": True,
+        "fastest": True,
+        "fast": None
+    },
+    "tissue_types": {
+        "needs_license": True,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": False
+    },
+    "lung_vessels": {
+        "needs_license": False,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": False
+    },
+    "pleural_pericard_effusion": {
+        "needs_license": False,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": False
+    },
+    "heartchambers_highres": {
+        "needs_license": True,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": False
+    },
+    "lung_nodules": {
+        "needs_license": False,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": False
+    },
+    "body": {
+        "needs_license": False,
+        "use_roi_subset": False,
+        "fastest": False,
+        "fast": True
+    }
+}
+
 task_segment_map = {
     298: [
         "spleen", "kidney_right", "kidney_left", "gallbladder", "liver",
