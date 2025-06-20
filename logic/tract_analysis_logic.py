@@ -169,6 +169,47 @@ class TractAnalysisLogic(LungBiopsyTractPlannerLogic):
         dist_ant = ymax - p0[1]
         dist_post = p0[1] - ymin
         dist_lat = min(p0[0] - xmin, xmax - p0[0])
+    # ------------------------------------------------------------------
+    # Risk and depth helper utilities
+    # ------------------------------------------------------------------
+    @staticmethod
+    def compute_risk_tract(event, model, tract_features, base_eta, risk_table):
+        """Return risk probability using logistic regression coefficients."""
+        table = risk_table[event][model]
+        eta = base_eta
+
+        for name, value in tract_features.items():
+            factor = table["factors"].get(name)
+            if factor:
+                eta += factor["beta"] * value
+        return 1.0 / (1.0 + math.exp(-eta))
+
+    @staticmethod
+    def depth_or_continuous(mm):
+        """Continuous odds ratio function for pneumothorax."""
+        anchors = [(0, 0.0), (20, math.log(2.16)), (30, math.log(2.38)), (50, math.log(8.47))]
+        for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+            if x0 <= mm <= x1:
+                t = (mm - x0) / (x1 - x0)
+                return math.exp(y0 + t * (y1 - y0))
+
+        slope = (anchors[-1][1] - anchors[-2][1]) / (anchors[-1][0] - anchors[-2][0])
+        log_or = anchors[-1][1] + slope * (mm - anchors[-1][0])
+        return math.exp(log_or)
+
+    @staticmethod
+    def depth_or_continuous_hmr(mm):
+        """Continuous odds ratio for hemorrhage models."""
+        anchors = [(0, 0.0), (30, math.log(4.558)), (50, math.log(25.641))]
+        for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+            if x0 <= mm <= x1:
+                t = (mm - x0) / (x1 - x0)
+                return math.exp(y0 + t * (y1 - y0))
+
+        slope = (anchors[-1][1] - anchors[-2][1]) / (anchors[-1][0] - anchors[-2][0])
+        log_or = anchors[-1][1] + slope * (mm - anchors[-1][0])
+        return math.exp(log_or)
+
         return int(dist_ant < dist_lat and dist_ant < dist_post)
 
     def feature_lateral_entry(self, start_point, end_point, segmentation_node, volume_node):
